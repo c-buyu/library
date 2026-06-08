@@ -130,6 +130,7 @@ DROP TABLE IF EXISTS messages;
 CREATE TABLE messages (
     msg_id INT PRIMARY KEY AUTO_INCREMENT COMMENT '消息ID',
     user_id INT NOT NULL COMMENT '接收用户ID',
+    msg_type VARCHAR(20) NOT NULL DEFAULT '系统' COMMENT '消息类型：借书/还书/到期/超期/续借/系统',
     title VARCHAR(50) NOT NULL COMMENT '消息标题',
     content VARCHAR(200) NOT NULL COMMENT '消息内容',
     is_read TINYINT NOT NULL DEFAULT 0 COMMENT '是否已读:0未读/1已读',
@@ -215,6 +216,7 @@ CREATE INDEX idx_accidents_borrow_id ON accidents(borrow_id);
 CREATE INDEX idx_accidents_book_item_id ON accidents(book_item_id);
 CREATE INDEX idx_messages_user_id ON messages(user_id);
 CREATE INDEX idx_messages_is_read ON messages(is_read);
+CREATE INDEX idx_messages_msg_type ON messages(msg_type);
 
 -- ==============================================
 -- 验证脚本

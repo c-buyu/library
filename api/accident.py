@@ -31,6 +31,7 @@ def add_accident():
         if not borrow:
             return error("借阅记录不存在")
         
+        current_date = get_current_date()
         user_id = borrow['user_id']
         book_id = borrow['book_id']
         book_item_id = borrow['book_item_id']
@@ -38,20 +39,18 @@ def add_accident():
         # 插入意外处理记录（关联单本图书）
         cur.execute("""
             INSERT INTO accidents(borrow_id, user_id, book_id, book_item_id, handle_type, amount, handle_date, remark)
-            VALUES (%s, %s, %s, %s, %s, %s, CURDATE(), %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, (borrow_id, user_id, book_id, book_item_id, 
-              handle_type, amount, data.get('remark')))
+              handle_type, amount, current_date, data.get('remark')))
         
         # 如果是丢失赔偿，更新单本图书状态为丢失
         if handle_type == '丢失赔偿':
             cur.execute("UPDATE book_items SET status='丢失' WHERE book_item_id=%s", (book_item_id,))
-            cur.execute("UPDATE books SET available_stock = available_stock - 1 WHERE book_id=%s", (book_id,))
             cur.execute("UPDATE borrows SET status='已还' WHERE borrow_id=%s", (borrow_id,))
         
         # 如果是损坏赔偿，更新单本图书状态为损坏
         if handle_type == '损坏赔偿':
             cur.execute("UPDATE book_items SET status='损坏' WHERE book_item_id=%s", (book_item_id,))
-            cur.execute("UPDATE books SET available_stock = available_stock - 1 WHERE book_id=%s", (book_id,))
             cur.execute("UPDATE borrows SET status='已还' WHERE borrow_id=%s", (borrow_id,))
         
         conn.commit()
@@ -112,7 +111,7 @@ def calculate_overdue():
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT return_deadline, DATEDIFF(CURDATE(), return_deadline) as overdue_days
+            SELECT return_deadline
             FROM borrows WHERE borrow_id=%s AND status='未还'
         """, (borrow_id,))
         result = cur.fetchone()
@@ -120,7 +119,7 @@ def calculate_overdue():
         if not result:
             return error("借阅记录不存在或已归还")
         
-        overdue_days = max(0, result['overdue_days'])
+        overdue_days = max(0, (get_current_date() - result['return_deadline']).days)
         amount = overdue_days * BUSINESS_CONFIG['OVERDUE_FEE_PER_DAY']
         
         return success({

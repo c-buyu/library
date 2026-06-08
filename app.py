@@ -10,8 +10,8 @@ from api.book import book_bp
 from api.borrow import borrow_bp
 from api.accident import accident_bp
 from api.book_item import book_item_bp
-# from api.system import system_bp
-# from api.message import message_bp
+from api.system import system_bp
+from api.message import message_bp
 
 # 导入统一响应工具
 from utils.response import error
@@ -32,8 +32,8 @@ app.register_blueprint(book_bp, url_prefix="/api/book")
 app.register_blueprint(borrow_bp, url_prefix="/api/borrow")
 app.register_blueprint(accident_bp, url_prefix="/api/accident")
 app.register_blueprint(book_item_bp, url_prefix='/api/book_item')
-# app.register_blueprint(system_bp, url_prefix="/api/system")
-# app.register_blueprint(message_bp, url_prefix="/api/message")
+app.register_blueprint(system_bp, url_prefix="/api/system")
+app.register_blueprint(message_bp, url_prefix="/api/message")
 
 # 根路由测试
 @app.route("/", methods=["GET"])

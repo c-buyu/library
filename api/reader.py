@@ -32,6 +32,10 @@ def add_reader():
     password = data.get('password', '123456')  # 默认密码123456
     name = data.get('name')
     black = data.get('black', 0)  # 新增：黑名单字段
+    gender = data.get('gender')
+    reader_type = data.get('reader_type')
+    max_borrow_num = data.get('max_borrow_num', BUSINESS_CONFIG['DEFAULT_MAX_BORROW_NUM'])
+    borrow_days = data.get('borrow_days', BUSINESS_CONFIG['DEFAULT_BORROW_DAYS'])
     
     if not all([username, name]):
         return error("账号、姓名不能为空")
@@ -46,12 +50,11 @@ def add_reader():
             return error("读者账号已存在")
         
         cur.execute("""
-            INSERT INTO users(username, password, name, role, max_borrow_num, borrow_days, black)
-            VALUES (%s, %s, %s, '读者', %s, %s, %s)
-        """, (username, md5_pwd, name, 
-              BUSINESS_CONFIG['DEFAULT_MAX_BORROW_NUM'], 
-              BUSINESS_CONFIG['DEFAULT_BORROW_DAYS'],
-              black))
+            INSERT INTO users(username, password, name, role, gender, reader_type,
+                              max_borrow_num, borrow_days, black)
+            VALUES (%s, %s, %s, '读者', %s, %s, %s, %s, %s)
+        """, (username, md5_pwd, name, gender, reader_type,
+              max_borrow_num, borrow_days, black))
         conn.commit()
         return success(msg="读者添加成功")
     except Exception as e:

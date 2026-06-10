@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图书馆管理系统</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main id="loginView" class="login-shell">
+    <section class="login-panel">
+      <div>
+        <p class="eyebrow">Library Admin</p>
+        <h1>图书馆管理系统</h1>
+        <p class="muted">基于 B/S 架构的图书借阅管理前端</p>
+      </div>
+      <form id="loginForm" class="form-stack">
+        <label>
+          <span>账号</span>
+          <input id="loginUsername" value="admin" autocomplete="username">
+        </label>
+        <label>
+          <span>密码</span>
+          <input id="loginPassword" value="123456" type="password" autocomplete="current-password">
+        </label>
+        <button class="primary-btn" type="submit">登录系统</button>
+      </form>
+    </section>
+  </main>
+
+  <main id="appView" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <strong>图书馆管理</strong>
+        <span>B/S 实验系统</span>
+      </div>
+      <nav class="nav-list" aria-label="主导航">
+        <button class="nav-item active" data-view="dashboard">总览</button>
+        <button class="nav-item" data-view="books">图书管理</button>
+        <button class="nav-item" data-view="items">馆藏副本</button>
+        <button class="nav-item" data-view="readers">读者管理</button>
+        <button class="nav-item" data-view="borrow">借书登记</button>
+        <button class="nav-item" data-view="return">还书登记</button>
+        <button class="nav-item" data-view="records">借阅记录</button>
+        <button class="nav-item" data-view="accidents">意外处理</button>
+        <button class="nav-item" data-view="messages">消息通知</button>
+      </nav>
+    </aside>
+
+    <section class="workspace">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Library System</p>
+          <h2 id="pageTitle">总览</h2>
+        </div>
+        <div class="user-chip">
+          <label class="date-switch">
+            <span>系统日期</span>
+            <input id="systemDate" type="date">
+          </label>
+          <span id="currentUser">系统管理员</span>
+          <button id="logoutBtn" class="ghost-btn">退出</button>
+        </div>
+      </header>
+
+      <section id="dashboard" class="view active">
+        <div class="stats-grid">
+          <article class="stat-card">
+            <span>图书种类</span>
+            <strong id="statBookTypes">0</strong>
+          </article>
+          <article class="stat-card">
+            <span>可借库存</span>
+            <strong id="statAvailable">0</strong>
+          </article>
+          <article class="stat-card">
+            <span>未还记录</span>
+            <strong id="statBorrowing">0</strong>
+          </article>
+          <article class="stat-card danger">
+            <span>超期记录</span>
+            <strong id="statOverdue">0</strong>
+          </article>
+        </div>
+        <section class="content-section">
+          <div class="section-head">
+            <h3>最近借阅</h3>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>读者</th>
+                  <th>图书</th>
+                  <th>借书日期</th>
+                  <th>应还日期</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody id="recentBorrowRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="books" class="view">
+        <div class="section-head">
+          <div>
+            <h3>图书管理</h3>
+            <p class="muted">维护图书信息、库存和分类</p>
+          </div>
+          <button class="primary-btn" data-open-modal="bookModal">新增图书</button>
+        </div>
+        <div class="toolbar">
+          <input id="bookSearch" placeholder="按书名、作者、ISBN 搜索">
+          <select id="bookCategoryFilter">
+            <option value="">全部分类</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ISBN</th>
+                <th>书名</th>
+                <th>作者</th>
+                <th>分类</th>
+                <th>价格</th>
+                <th>总副本</th>
+                <th>可借副本</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="bookRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="items" class="view">
+        <div class="section-head">
+          <div>
+            <h3>馆藏副本</h3>
+            <p class="muted">每一条副本记录对应一本可借、可还、可丢失或损坏的实体书</p>
+          </div>
+          <button class="primary-btn" data-open-modal="itemModal">新增副本</button>
+        </div>
+        <div class="toolbar">
+          <input id="itemSearch" placeholder="按条码、书名、馆藏位置搜索">
+          <select id="itemStatusFilter">
+            <option value="">全部状态</option>
+            <option value="在馆">在馆</option>
+            <option value="借出">借出</option>
+            <option value="丢失">丢失</option>
+            <option value="损坏">损坏</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>副本条码</th>
+                <th>书名</th>
+                <th>馆藏位置</th>
+                <th>入库日期</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody id="itemRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="readers" class="view">
+        <div class="section-head">
+          <div>
+            <h3>读者管理</h3>
+            <p class="muted">维护读者账号、借阅权限和黑名单状态</p>
+          </div>
+          <button class="primary-btn" data-open-modal="readerModal">新增读者</button>
+        </div>
+        <div class="toolbar">
+          <input id="readerSearch" placeholder="按姓名、账号、类型搜索">
+          <select id="readerStatusFilter">
+            <option value="">全部状态</option>
+            <option value="0">正常</option>
+            <option value="1">黑名单</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>账号</th>
+                <th>姓名</th>
+                <th>性别</th>
+                <th>类型</th>
+                <th>可借上限</th>
+                <th>期限</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="readerRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="borrow" class="view">
+        <div class="section-head">
+          <div>
+            <h3>借书登记</h3>
+            <p class="muted">选择读者和图书，生成借阅记录</p>
+          </div>
+        </div>
+        <form id="borrowForm" class="operation-form">
+          <label>
+            <span>读者</span>
+            <select id="borrowUser"></select>
+          </label>
+          <label>
+            <span>馆藏副本</span>
+            <select id="borrowItem"></select>
+          </label>
+          <label>
+            <span>借书日期</span>
+            <input id="borrowDate" type="date">
+          </label>
+          <label>
+            <span>备注</span>
+            <input id="borrowRemark" placeholder="可选">
+          </label>
+          <button class="primary-btn" type="submit">确认借书</button>
+        </form>
+      </section>
+
+      <section id="return" class="view">
+        <div class="section-head">
+          <div>
+            <h3>还书登记</h3>
+            <p class="muted">选择未还记录，自动计算超期天数和罚款</p>
+          </div>
+        </div>
+        <form id="returnForm" class="operation-form">
+          <label>
+            <span>借阅记录</span>
+            <select id="returnBorrow"></select>
+          </label>
+          <label>
+            <span>还书日期</span>
+            <input id="returnDate" type="date">
+          </label>
+          <label>
+            <span>备注</span>
+            <input id="returnRemark" placeholder="可选">
+          </label>
+          <button class="primary-btn" type="submit">确认还书</button>
+        </form>
+      </section>
+
+      <section id="records" class="view">
+        <div class="section-head">
+          <div>
+            <h3>借阅记录</h3>
+            <p class="muted">查询未还、已还和超期记录</p>
+          </div>
+        </div>
+        <div class="toolbar">
+          <input id="recordSearch" placeholder="按读者或图书搜索">
+          <select id="recordStatusFilter">
+            <option value="">全部状态</option>
+            <option value="未还">未还</option>
+            <option value="已还">已还</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>读者</th>
+                <th>图书</th>
+                <th>借书日期</th>
+                <th>应还日期</th>
+                <th>续借</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody id="recordRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="accidents" class="view">
+        <div class="section-head">
+          <div>
+            <h3>意外处理</h3>
+            <p class="muted">续借、超期赔偿、丢失赔偿和损坏赔偿</p>
+          </div>
+          <button class="primary-btn" data-open-modal="accidentModal">新增处理</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>读者</th>
+                <th>图书</th>
+                <th>类型</th>
+                <th>金额</th>
+                <th>日期</th>
+                <th>备注</th>
+              </tr>
+            </thead>
+            <tbody id="accidentRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="messages" class="view">
+        <div class="section-head">
+          <div>
+            <h3>消息通知</h3>
+            <p class="muted">展示借书、还书、到期、续借和超期提醒</p>
+          </div>
+          <button id="generateMessagesBtn" class="primary-btn">生成到期提醒</button>
+        </div>
+        <div id="messageList" class="message-list"></div>
+      </section>
+    </section>
+  </main>
+
+  <div id="bookModal" class="modal hidden">
+    <form id="bookForm" class="modal-card">
+      <div class="modal-head">
+        <h3>新增图书</h3>
+        <button type="button" class="icon-btn" data-close-modal>×</button>
+      </div>
+      <div class="form-grid">
+        <label><span>ISBN</span><input id="bookIsbn" required></label>
+        <label><span>书名</span><input id="bookName" required></label>
+        <label><span>作者</span><input id="bookAuthor"></label>
+        <label><span>分类</span><input id="bookCategory"></label>
+        <label><span>价格</span><input id="bookPrice" type="number" min="0" step="0.01"></label>
+        <label><span>总库存</span><input id="bookStock" type="number" min="1" value="1"></label>
+      </div>
+      <button class="primary-btn" type="submit">保存</button>
+    </form>
+  </div>
+
+  <div id="itemModal" class="modal hidden">
+    <form id="itemForm" class="modal-card">
+      <div class="modal-head">
+        <h3>新增馆藏副本</h3>
+        <button type="button" class="icon-btn" data-close-modal>×</button>
+      </div>
+      <div class="form-grid">
+        <label><span>所属书种</span><select id="itemBook"></select></label>
+        <label><span>副本条码</span><input id="itemBarcode" required></label>
+        <label><span>馆藏位置</span><input id="itemLocation" value="一楼A区"></label>
+        <label><span>状态</span><select id="itemStatus"><option>在馆</option><option>损坏</option><option>丢失</option></select></label>
+      </div>
+      <button class="primary-btn" type="submit">保存</button>
+    </form>
+  </div>
+
+  <div id="readerModal" class="modal hidden">
+    <form id="readerForm" class="modal-card">
+      <div class="modal-head">
+        <h3>新增读者</h3>
+        <button type="button" class="icon-btn" data-close-modal>×</button>
+      </div>
+      <div class="form-grid">
+        <label><span>账号</span><input id="readerUsername" required></label>
+        <label><span>姓名</span><input id="readerName" required></label>
+        <label><span>性别</span><select id="readerGender"><option>女</option><option>男</option></select></label>
+        <label><span>类型</span><input id="readerType" value="学生"></label>
+        <label><span>最大借书数</span><input id="readerMax" type="number" min="1" value="5"></label>
+        <label><span>借书期限</span><input id="readerDays" type="number" min="1" value="30"></label>
+      </div>
+      <button class="primary-btn" type="submit">保存</button>
+    </form>
+  </div>
+
+  <div id="accidentModal" class="modal hidden">
+    <form id="accidentForm" class="modal-card">
+      <div class="modal-head">
+        <h3>新增意外处理</h3>
+        <button type="button" class="icon-btn" data-close-modal>×</button>
+      </div>
+      <div class="form-grid">
+        <label><span>借阅记录</span><select id="accidentBorrow"></select></label>
+        <label><span>处理类型</span><select id="accidentType"><option>续借</option><option>超期赔偿</option><option>丢失赔偿</option><option>损坏赔偿</option></select></label>
+        <label><span>金额</span><input id="accidentAmount" type="number" min="0" step="0.01" value="0"></label>
+        <label><span>处理日期</span><input id="accidentDate" type="date"></label>
+        <label class="full-field"><span>备注</span><input id="accidentRemark"></label>
+      </div>
+      <button class="primary-btn" type="submit">保存</button>
+    </form>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="./app.js"></script>
+</body>
+</html>

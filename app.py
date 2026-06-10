@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, jsonify
+import os
+
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from config import FLASK_CONFIG
 
@@ -17,7 +19,9 @@ from api.message import message_bp
 from utils.response import error
 
 # 初始化Flask应用
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
 app.config.update(FLASK_CONFIG)
 
 # 配置跨域
@@ -35,9 +39,10 @@ app.register_blueprint(book_item_bp, url_prefix='/api/book_item')
 app.register_blueprint(system_bp, url_prefix="/api/system")
 app.register_blueprint(message_bp, url_prefix="/api/message")
 
-# 根路由测试
 @app.route("/", methods=["GET"])
 def index():
+    if os.path.exists(os.path.join(FRONTEND_DIR, "index.html")):
+        return send_from_directory(FRONTEND_DIR, "index.html")
     return jsonify({
         "code": 200,
         "msg": "图书管理系统后端服务启动成功！",
@@ -46,6 +51,13 @@ def index():
             "status": "running"
         }
     })
+
+
+@app.route("/<path:filename>", methods=["GET"])
+def frontend_assets(filename):
+    if os.path.exists(os.path.join(FRONTEND_DIR, filename)):
+        return send_from_directory(FRONTEND_DIR, filename)
+    return error("资源不存在", code=404)
 
 # 全局异常处理
 @app.errorhandler(Exception)

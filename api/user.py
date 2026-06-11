@@ -39,6 +39,8 @@ def login():
         cur.close()
         conn.close()
 
+
+
 # 查询所有用户（新增：black字段）
 @user_bp.route('/list', methods=['GET'])
 def get_user_list():
@@ -156,6 +158,38 @@ def delete_user():
     except Exception as e:
         conn.rollback()
         return error(f"删除失败：{str(e)}")
+    finally:
+        cur.close()
+        conn.close()
+
+# 修改密码
+@user_bp.route('/change_pwd', methods=['PUT'])
+def change_pwd():
+    data = request.json
+    user_id = data.get('user_id')
+    old_pwd = data.get('old_pwd')
+    new_pwd = data.get('new_pwd')
+    
+    if not all([user_id, old_pwd, new_pwd]):
+        return error("参数不能为空")
+    
+    md5_old = hashlib.md5(old_pwd.encode()).hexdigest()
+    md5_new = hashlib.md5(new_pwd.encode()).hexdigest()
+    
+    conn = get_db_conn()
+    try:
+        cur = conn.cursor()
+        # 校验旧密码
+        cur.execute("SELECT 1 FROM users WHERE user_id=%s AND password=%s", (user_id, md5_old))
+        if not cur.fetchone():
+            return error("旧密码错误")
+        # 更新新密码
+        cur.execute("UPDATE users SET password=%s WHERE user_id=%s", (md5_new, user_id))
+        conn.commit()
+        return success(msg="密码修改成功")
+    except Exception as e:
+        conn.rollback()
+        return error(f"修改失败：{str(e)}")
     finally:
         cur.close()
         conn.close()

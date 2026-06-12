@@ -126,12 +126,21 @@ async function loadAll() {
 }
 
 function applyRoleView() {
-  const adminViews = ["books", "items", "readers"];
+  const adminViews = ["readers"];
   adminViews.forEach((viewId) => {
     const item = document.querySelector(`[data-view="${viewId}"]`);
     if (item) item.classList.toggle("hidden", !isAdmin());
   });
+
   $$(".admin-only").forEach((item) => item.classList.toggle("hidden", !isAdmin()));
+
+  const dateInputIds = ["systemDate", "borrowDate", "returnDate", "accidentDate"];
+  dateInputIds.forEach((id) => {
+    const dateInput = $("#" + id);
+    if (dateInput) {
+      dateInput.readOnly = !isAdmin();
+    }
+  });
 
   const activeHidden = document.querySelector(".nav-item.active.hidden");
   if (activeHidden) switchView("dashboard");
@@ -158,6 +167,7 @@ function renderDashboard() {
       <td>${toDateText(item.borrow_date)}</td>
       <td>${toDateText(item.return_deadline)}</td>
       <td><span class="status ${statusClass(item.status)}">${item.status}</span></td>
+      <td>${item.remark || "-"}
     </tr>
   `).join("");
 }
@@ -231,10 +241,26 @@ function renderReaders() {
   `).join("");
 }
 
+function renderBorrowItemSelect() {
+  const search = $("#borrowItemSearch")?.value.trim().toLowerCase() || "";
+  const filteredItems = state.bookItems.filter((item) => {
+    const bookName = item.book_name || bookById(item.book_id)?.book_name || "";
+    const text = `${item.book_item_id} ${bookName}`.toLowerCase();
+    return !search || text.includes(search);
+  });
+  $("#borrowItem").innerHTML = filteredItems.map((item) => `
+    <option value="${item.book_item_id}" ${item.status !== "在馆" ? "disabled" : ""}>
+      ${itemLabel(item)} - ${item.status}
+    </option>
+  `).join("");
+}
+
 function renderSelects() {
   const readers = isAdmin() ? state.users.filter((user) => user.role === "读者") : [state.currentUser].filter(Boolean);
   $("#borrowUser").innerHTML = readers.map((user) => `<option value="${user.user_id}">${user.name}（${user.username}）</option>`).join("");
-  $("#borrowItem").innerHTML = state.bookItems.map((item) => `<option value="${item.book_item_id}" ${item.status !== "在馆" ? "disabled" : ""}>${itemLabel(item)} - ${item.status}</option>`).join("");
+  
+  renderBorrowItemSelect();
+
   $("#itemBook").innerHTML = state.books.map((book) => `<option value="${book.book_id}">${book.book_name}</option>`).join("");
 
   const unreturned = state.borrows.filter((item) => item.status === "未还");
@@ -261,7 +287,8 @@ function renderRecords() {
         <td>${toDateText(item.return_deadline)}</td>
         <td>${item.renew_times}</td>
         <td><span class="status ${overdue ? "bad" : statusClass(item.status)}">${overdue ? "超期" : item.status}</span></td>
-      </tr>
+        <td>${item.remark || "-"}</td>
+        </tr>
     `;
   }).join("");
 }
@@ -400,6 +427,9 @@ function initEvents() {
     });
   }, "系统日期已调整"));
 
+    $("#borrowItemSearch").addEventListener("input", renderBorrowItemSelect);
+  $("#borrowItemSearch").addEventListener("change", renderBorrowItemSelect);
+
   $("#generateMessagesBtn").addEventListener("click", () => handleAction(async () => {
     const result = await apiRequest("/api/message/generate_due", {
       method: "POST",
@@ -483,7 +513,8 @@ function initEvents() {
         method: "POST",
         body: JSON.stringify(authBody({
           user_id: Number($("#borrowUser").value),
-          book_item_id: $("#borrowItem").value
+          book_item_id: $("#borrowItem").value,
+          remark: $("#borrowRemark").value.trim() 
         }))
       });
       event.target.reset();

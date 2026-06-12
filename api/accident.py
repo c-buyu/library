@@ -8,7 +8,7 @@ from utils.date_utils import get_current_date, add_days
 
 accident_bp = Blueprint('accident', __name__)
 
-# 意外处理记录（修改：关联单本图书）
+# 意外处理记录（关联单本图书）
 @accident_bp.route('/add', methods=['POST'])
 def add_accident():
     data = request.json
@@ -103,7 +103,7 @@ def get_accident_list():
         cur.close()
         conn.close()
 
-# 计算超期罚款（无修改）
+# 计算超期罚款
 @accident_bp.route('/calculate_overdue', methods=['GET'])
 def calculate_overdue():
     borrow_id = request.args.get('borrow_id')

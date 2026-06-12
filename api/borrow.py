@@ -15,6 +15,7 @@ def add_borrow():
     book_item_id = data.get('book_item_id')  # 仅此处需要传入单本编号
     operator_user_id = data.get('operator_user_id')
     operator_role = data.get('operator_role')
+    remark = data.get('remark')
     
     if not all([user_id, book_item_id]):
         return error("读者ID和单本图书编号不能为空")
@@ -51,9 +52,9 @@ def add_borrow():
         
         # 4. 插入借阅记录
         cur.execute("""
-            INSERT INTO borrows(user_id, book_id, book_item_id, borrow_date, return_deadline, renew_times)
-            VALUES (%s, %s, %s, %s, %s, 0)
-        """, (user_id, book_id, book_item_id, borrow_date, return_deadline))
+            INSERT INTO borrows(user_id, book_id, book_item_id, borrow_date, return_deadline, renew_times, remark)
+            VALUES (%s, %s, %s, %s, %s, 0, %s)
+        """, (user_id, book_id, book_item_id, borrow_date, return_deadline, remark))
         
         # 5. 更新单本状态和书种库存
         cur.execute("UPDATE book_items SET status='借出' WHERE book_item_id=%s", (book_item_id,))
@@ -162,7 +163,7 @@ def get_borrow_list():
         sql = """
             SELECT b.borrow_id, b.user_id, u.name as user_name, 
                    b.book_id, bo.book_name, b.book_item_id,
-                   b.borrow_date, b.return_deadline, b.renew_times, b.status
+                   b.borrow_date, b.return_deadline, b.renew_times, b.status, b.remark
             FROM borrows b
             LEFT JOIN users u ON b.user_id = u.user_id
             LEFT JOIN books bo ON b.book_id = bo.book_id

@@ -111,7 +111,7 @@
             <h3>图书管理</h3>
             <p class="muted">维护图书信息、库存和分类</p>
           </div>
-          <button class="primary-btn" data-open-modal="bookModal">新增图书</button>
+          <button class="primary-btn admin-only" data-open-modal="bookModal">新增图书</button>
         </div>
         <div class="toolbar">
           <input id="bookSearch" placeholder="按书名、作者、ISBN 搜索">
@@ -144,7 +144,7 @@
             <h3>馆藏副本</h3>
             <p class="muted">每一条副本记录对应一本可借、可还、可丢失或损坏的实体书</p>
           </div>
-          <button class="primary-btn" data-open-modal="itemModal">新增副本</button>
+          <button class="primary-btn admin-only" data-open-modal="itemModal">新增副本</button>
         </div>
         <div class="toolbar">
           <input id="itemSearch" placeholder="按条码、书名、馆藏位置搜索">
@@ -213,6 +213,9 @@
             <h3>借书登记</h3>
             <p class="muted">选择读者和图书，生成借阅记录</p>
           </div>
+        </div>
+        <div class="toolbar">
+          <input id="borrowItemSearch" placeholder="按书名、副本条码搜索馆藏副本">
         </div>
         <form id="borrowForm" class="operation-form">
           <label>
@@ -284,6 +287,7 @@
                 <th>应还日期</th>
                 <th>续借</th>
                 <th>状态</th>
+                <th>备注</th>
               </tr>
             </thead>
             <tbody id="recordRows"></tbody>

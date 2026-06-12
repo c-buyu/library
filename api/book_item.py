@@ -5,7 +5,7 @@ from utils.response import success, error
 
 book_item_bp = Blueprint('book_item', __name__)
 
-# 查询单本图书列表（仅管理员使用，按书种筛选）
+# 查询单本图书列表
 @book_item_bp.route('/list', methods=['GET'])
 def get_book_item_list():
     book_id = request.args.get('book_id')  # 按书种筛选

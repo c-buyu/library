@@ -11,7 +11,7 @@ reader_bp = Blueprint('reader', __name__)
 def _is_admin(data):
     return data.get('operator_role') == '管理员' or request.args.get('operator_role') == '管理员'
 
-# 查询所有读者（新增：black字段）
+# 查询所有读者
 @reader_bp.route('/list', methods=['GET'])
 def get_reader_list():
     conn = get_db_conn()
@@ -28,16 +28,16 @@ def get_reader_list():
         cur.close()
         conn.close()
 
-# 新增读者（新增：black字段）
+# 新增读者
 @reader_bp.route('/add', methods=['POST'])
 def add_reader():
     data = request.json
     if not _is_admin(data):
         return error("只有管理员可以新增读者", code=403)
     username = data.get('username')
-    password = data.get('password', '123456')  # 默认密码123456
+    password = data.get('password', '123456') 
     name = data.get('name')
-    black = data.get('black', 0)  # 新增：黑名单字段
+    black = data.get('black', 0)  
     gender = data.get('gender')
     reader_type = data.get('reader_type')
     max_borrow_num = data.get('max_borrow_num', BUSINESS_CONFIG['DEFAULT_MAX_BORROW_NUM'])
@@ -70,7 +70,7 @@ def add_reader():
         cur.close()
         conn.close()
 
-# 修改读者信息（新增：black字段）
+# 修改读者信息
 @reader_bp.route('/update', methods=['PUT'])
 def update_reader():
     data = request.json
@@ -83,7 +83,6 @@ def update_reader():
     
     update_fields = []
     params = []
-    # 新增：black字段
     for field in ['name', 'gender', 'reader_type', 'max_borrow_num', 'borrow_days', 'black']:
         if field in data:
             update_fields.append(f"{field}=%s")
@@ -107,7 +106,7 @@ def update_reader():
         cur.close()
         conn.close()
 
-# 删除读者（逻辑不变）
+# 删除读者
 @reader_bp.route('/delete', methods=['DELETE'])
 def delete_reader():
     data = request.json
@@ -135,12 +134,12 @@ def delete_reader():
         cur.close()
         conn.close()
 
-# 多条件查询读者（新增：black字段）
+# 多条件查询读者
 @reader_bp.route('/search', methods=['GET'])
 def search_reader():
     name = request.args.get('name', '')
     reader_type = request.args.get('reader_type', '')
-    black = request.args.get('black')  # 新增：黑名单筛选
+    black = request.args.get('black') 
     
     conn = get_db_conn()
     try:

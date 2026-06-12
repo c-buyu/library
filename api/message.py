@@ -93,14 +93,13 @@ def mark_message_read():
     try:
         cur = conn.cursor()
         if operator_role == '管理员':
-            cur.execute("UPDATE messages SET is_read=1 WHERE msg_id=%s", (msg_id,))
-        else:
-            if not operator_user_id:
-                return error("缺少当前用户信息", code=403)
-            cur.execute(
-                "UPDATE messages SET is_read=1 WHERE msg_id=%s AND user_id=%s",
-                (msg_id, operator_user_id)
-            )
+            return error("管理员只能查看消息，不能替读者标记已读", code=403)
+        if not operator_user_id:
+            return error("缺少当前用户信息", code=403)
+        cur.execute(
+            "UPDATE messages SET is_read=1 WHERE msg_id=%s AND user_id=%s",
+            (msg_id, operator_user_id)
+        )
         if cur.rowcount == 0:
             return error("消息不存在或无权操作", code=403)
         conn.commit()

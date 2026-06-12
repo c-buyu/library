@@ -286,7 +286,9 @@ function renderMessages() {
         <span>${item.content}</span>
         <p class="muted">${userName(item.user_id)} · ${toDateText(item.create_time)}</p>
       </div>
-      <button class="ghost-btn" data-read-message="${item.msg_id}">${item.is_read ? "已读" : "标为已读"}</button>
+      ${isAdmin()
+        ? `<span class="read-state">${item.is_read ? "已读" : "未读"}</span>`
+        : `<button class="ghost-btn" data-read-message="${item.msg_id}">${item.is_read ? "已读" : "标为已读"}</button>`}
     </article>
   `).join("");
 }

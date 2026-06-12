@@ -448,6 +448,17 @@ tr:last-child td {
   border-left: 4px solid var(--accent);
 }
 
+.read-state {
+  align-self: center;
+  min-width: 68px;
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #eef4f7;
+  color: var(--primary-dark);
+  text-align: center;
+  font-size: 14px;
+}
+
 .toast {
   position: fixed;
   right: 22px;

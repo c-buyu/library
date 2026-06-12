@@ -16,6 +16,23 @@ const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 const today = () => state.systemDate;
 const toDateText = (value) => value ? String(value).slice(0, 10) : "-";
 const daysBetween = (start, end) => Math.ceil((new Date(end) - new Date(start)) / 86400000);
+const isAdmin = () => state.currentUser?.role === "管理员";
+
+function authQuery() {
+  if (!state.currentUser) return "";
+  return new URLSearchParams({
+    operator_user_id: state.currentUser.user_id,
+    operator_role: state.currentUser.role
+  }).toString();
+}
+
+function authBody(extra = {}) {
+  return {
+    ...extra,
+    operator_user_id: state.currentUser?.user_id,
+    operator_role: state.currentUser?.role
+  };
+}
 
 async function apiRequest(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -79,14 +96,16 @@ function copyStats(bookId) {
 }
 
 async function loadAll() {
+  const query = authQuery();
+  const userScope = isAdmin() ? "" : `?user_id=${state.currentUser.user_id}`;
   const [dateData, books, items, readers, borrows, accidents, messages] = await Promise.all([
     apiRequest("/api/system/current_date"),
     apiRequest("/api/book/list"),
     apiRequest("/api/book_item/list"),
-    apiRequest("/api/reader/list"),
-    apiRequest("/api/borrow/list"),
-    apiRequest("/api/accident/list"),
-    apiRequest("/api/message/list")
+    isAdmin() ? apiRequest("/api/reader/list") : Promise.resolve([]),
+    apiRequest(`/api/borrow/list${userScope}`),
+    apiRequest(`/api/accident/list${userScope}`),
+    apiRequest(`/api/message/list?${query}`)
   ]);
 
   state.systemDate = dateData.current_date;
@@ -100,8 +119,21 @@ async function loadAll() {
   state.accidents = accidents || [];
   state.messages = messages || [];
   $("#systemDate").value = state.systemDate;
+  applyRoleView();
   setDefaultDates();
   renderAll();
+}
+
+function applyRoleView() {
+  const adminViews = ["books", "items", "readers"];
+  adminViews.forEach((viewId) => {
+    const item = document.querySelector(`[data-view="${viewId}"]`);
+    if (item) item.classList.toggle("hidden", !isAdmin());
+  });
+  $$(".admin-only").forEach((item) => item.classList.toggle("hidden", !isAdmin()));
+
+  const activeHidden = document.querySelector(".nav-item.active.hidden");
+  if (activeHidden) switchView("dashboard");
 }
 
 function switchView(viewId) {
@@ -151,7 +183,7 @@ function renderBooks() {
         <td>${Number(book.price || 0).toFixed(2)}</td>
         <td>${stats.total}</td>
         <td><span class="tag ${stats.available > 0 ? "ok" : "bad"}">${stats.available}</span></td>
-        <td><div class="row-actions"><button data-delete-book="${book.book_id}">删除</button></div></td>
+        <td><div class="row-actions">${isAdmin() ? `<button data-delete-book="${book.book_id}">删除</button>` : "-"}</div></td>
       </tr>
     `;
   }).join("");
@@ -193,13 +225,13 @@ function renderReaders() {
       <td>${user.max_borrow_num}</td>
       <td>${user.borrow_days} 天</td>
       <td><span class="status ${user.black ? "bad" : "ok"}">${user.black ? "黑名单" : "正常"}</span></td>
-      <td><div class="row-actions"><button data-toggle-black="${user.user_id}">${user.black ? "恢复" : "拉黑"}</button></div></td>
+      <td><div class="row-actions">${isAdmin() ? `<button data-toggle-black="${user.user_id}">${user.black ? "恢复" : "拉黑"}</button>` : "-"}</div></td>
     </tr>
   `).join("");
 }
 
 function renderSelects() {
-  const readers = state.users.filter((user) => user.role === "读者");
+  const readers = isAdmin() ? state.users.filter((user) => user.role === "读者") : [state.currentUser].filter(Boolean);
   $("#borrowUser").innerHTML = readers.map((user) => `<option value="${user.user_id}">${user.name}（${user.username}）</option>`).join("");
   $("#borrowItem").innerHTML = state.bookItems.map((item) => `<option value="${item.book_item_id}" ${item.status !== "在馆" ? "disabled" : ""}>${itemLabel(item)} - ${item.status}</option>`).join("");
   $("#itemBook").innerHTML = state.books.map((book) => `<option value="${book.book_id}">${book.book_name}</option>`).join("");
@@ -316,6 +348,43 @@ function initEvents() {
     }
   });
 
+  $("#registerForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      await apiRequest("/api/user/register", {
+        method: "POST",
+        body: JSON.stringify({
+          username: $("#registerUsername").value.trim(),
+          password: $("#registerPassword").value,
+          name: $("#registerName").value.trim(),
+          gender: $("#registerGender").value,
+          reader_type: $("#registerType").value.trim()
+        })
+      });
+      event.target.reset();
+      closeModals();
+      showToast("注册成功，请登录");
+    } catch (error) {
+      showToast(error.message);
+    }
+  });
+
+  $("#passwordForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    handleAction(async () => {
+      await apiRequest("/api/user/change_pwd", {
+        method: "PUT",
+        body: JSON.stringify({
+          user_id: state.currentUser.user_id,
+          old_pwd: $("#oldPassword").value,
+          new_pwd: $("#newPassword").value
+        })
+      });
+      event.target.reset();
+      closeModals();
+    }, "密码修改成功");
+  });
+
   $("#logoutBtn").addEventListener("click", () => {
     $("#appView").classList.add("hidden");
     $("#loginView").classList.remove("hidden");
@@ -389,7 +458,7 @@ function initEvents() {
     handleAction(async () => {
       await apiRequest("/api/reader/add", {
         method: "POST",
-        body: JSON.stringify({
+        body: JSON.stringify(authBody({
           username: $("#readerUsername").value.trim(),
           password: "123456",
           name: $("#readerName").value.trim(),
@@ -397,7 +466,7 @@ function initEvents() {
           reader_type: $("#readerType").value.trim(),
           max_borrow_num: Number($("#readerMax").value || 5),
           borrow_days: Number($("#readerDays").value || 30)
-        })
+        }))
       });
       event.target.reset();
       closeModals();
@@ -409,10 +478,10 @@ function initEvents() {
     handleAction(async () => {
       await apiRequest("/api/borrow/add", {
         method: "POST",
-        body: JSON.stringify({
+        body: JSON.stringify(authBody({
           user_id: Number($("#borrowUser").value),
           book_item_id: $("#borrowItem").value
-        })
+        }))
       });
       event.target.reset();
       setDefaultDates();
@@ -424,7 +493,7 @@ function initEvents() {
     handleAction(async () => {
       await apiRequest("/api/borrow/return", {
         method: "POST",
-        body: JSON.stringify({ borrow_id: Number($("#returnBorrow").value) })
+        body: JSON.stringify(authBody({ borrow_id: Number($("#returnBorrow").value) }))
       });
       event.target.reset();
       setDefaultDates();
@@ -438,17 +507,17 @@ function initEvents() {
       if (handleType === "续借") {
         await apiRequest("/api/borrow/renew", {
           method: "POST",
-          body: JSON.stringify({ borrow_id: Number($("#accidentBorrow").value) })
+          body: JSON.stringify(authBody({ borrow_id: Number($("#accidentBorrow").value) }))
         });
       } else {
         await apiRequest("/api/accident/add", {
           method: "POST",
-          body: JSON.stringify({
+          body: JSON.stringify(authBody({
             borrow_id: Number($("#accidentBorrow").value),
             handle_type: handleType,
             amount: Number($("#accidentAmount").value || 0),
             remark: $("#accidentRemark").value.trim()
-          })
+          }))
         });
       }
       event.target.reset();
@@ -477,7 +546,7 @@ function initEvents() {
       handleAction(async () => {
         await apiRequest("/api/reader/update", {
           method: "PUT",
-          body: JSON.stringify({ user_id: user.user_id, black: user.black ? 0 : 1 })
+          body: JSON.stringify(authBody({ user_id: user.user_id, black: user.black ? 0 : 1 }))
         });
       });
     }
@@ -486,7 +555,7 @@ function initEvents() {
       handleAction(async () => {
         await apiRequest("/api/message/read", {
           method: "PUT",
-          body: JSON.stringify({ msg_id: Number(readMessageId) })
+          body: JSON.stringify(authBody({ msg_id: Number(readMessageId) }))
         });
       });
     }

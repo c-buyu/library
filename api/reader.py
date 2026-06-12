@@ -7,6 +7,10 @@ import hashlib
 
 reader_bp = Blueprint('reader', __name__)
 
+
+def _is_admin(data):
+    return data.get('operator_role') == '管理员' or request.args.get('operator_role') == '管理员'
+
 # 查询所有读者（新增：black字段）
 @reader_bp.route('/list', methods=['GET'])
 def get_reader_list():
@@ -28,6 +32,8 @@ def get_reader_list():
 @reader_bp.route('/add', methods=['POST'])
 def add_reader():
     data = request.json
+    if not _is_admin(data):
+        return error("只有管理员可以新增读者", code=403)
     username = data.get('username')
     password = data.get('password', '123456')  # 默认密码123456
     name = data.get('name')
@@ -68,6 +74,8 @@ def add_reader():
 @reader_bp.route('/update', methods=['PUT'])
 def update_reader():
     data = request.json
+    if not _is_admin(data):
+        return error("只有管理员可以修改读者信息", code=403)
     user_id = data.get('user_id')
     
     if not user_id:
@@ -103,6 +111,8 @@ def update_reader():
 @reader_bp.route('/delete', methods=['DELETE'])
 def delete_reader():
     data = request.json
+    if not _is_admin(data):
+        return error("只有管理员可以删除读者", code=403)
     user_id = data.get('user_id')
     
     if not user_id:

@@ -46,6 +46,13 @@ def _insert_message(cur, user_id, msg_type, title, content):
 def get_message_list():
     user_id = request.args.get('user_id')
     is_read = request.args.get('is_read')
+    operator_role = request.args.get('operator_role')
+    operator_user_id = request.args.get('operator_user_id')
+
+    if operator_role != '管理员':
+        if not operator_user_id:
+            return error("缺少当前用户信息", code=403)
+        user_id = operator_user_id
 
     conn = get_db_conn()
     try:
@@ -76,6 +83,8 @@ def get_message_list():
 def mark_message_read():
     data = request.json or {}
     msg_id = data.get('msg_id')
+    operator_role = data.get('operator_role')
+    operator_user_id = data.get('operator_user_id')
 
     if not msg_id:
         return error("消息ID不能为空")
@@ -83,7 +92,17 @@ def mark_message_read():
     conn = get_db_conn()
     try:
         cur = conn.cursor()
-        cur.execute("UPDATE messages SET is_read=1 WHERE msg_id=%s", (msg_id,))
+        if operator_role == '管理员':
+            cur.execute("UPDATE messages SET is_read=1 WHERE msg_id=%s", (msg_id,))
+        else:
+            if not operator_user_id:
+                return error("缺少当前用户信息", code=403)
+            cur.execute(
+                "UPDATE messages SET is_read=1 WHERE msg_id=%s AND user_id=%s",
+                (msg_id, operator_user_id)
+            )
+        if cur.rowcount == 0:
+            return error("消息不存在或无权操作", code=403)
         conn.commit()
         return success(msg="消息已标记为已读")
     except Exception as e:

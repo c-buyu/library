@@ -13,9 +13,13 @@ def add_borrow():
     data = request.json
     user_id = data.get('user_id')
     book_item_id = data.get('book_item_id')  # 仅此处需要传入单本编号
+    operator_user_id = data.get('operator_user_id')
+    operator_role = data.get('operator_role')
     
     if not all([user_id, book_item_id]):
         return error("读者ID和单本图书编号不能为空")
+    if operator_role != '管理员' and str(operator_user_id) != str(user_id):
+        return error("读者只能为自己借书", code=403)
     
     conn = get_db_conn()
     try:
@@ -77,6 +81,8 @@ def add_borrow():
 def return_book():
     data = request.json
     borrow_id = data.get('borrow_id')
+    operator_user_id = data.get('operator_user_id')
+    operator_role = data.get('operator_role')
     
     if not borrow_id:
         return error("借阅记录ID不能为空")
@@ -94,6 +100,8 @@ def return_book():
         borrow = cur.fetchone()
         if not borrow:
             return error("借阅记录不存在或已归还")
+        if operator_role != '管理员' and str(operator_user_id) != str(borrow['user_id']):
+            return error("读者只能归还自己的借阅记录", code=403)
         
         book_id = borrow['book_id']
         book_item_id = borrow['book_item_id']
@@ -182,6 +190,8 @@ def get_borrow_list():
 def renew_book():
     data = request.json
     borrow_id = data.get('borrow_id')
+    operator_user_id = data.get('operator_user_id')
+    operator_role = data.get('operator_role')
     
     if not borrow_id:
         return error("借阅记录ID不能为空")
@@ -193,6 +203,8 @@ def renew_book():
         borrow = cur.fetchone()
         if not borrow:
             return error("借阅记录不存在或已归还")
+        if operator_role != '管理员' and str(operator_user_id) != str(borrow['user_id']):
+            return error("读者只能续借自己的借阅记录", code=403)
         
         if borrow['renew_times'] >= BUSINESS_CONFIG['MAX_RENEW_TIMES']:
             return error(f"已续借{borrow['renew_times']}次，无法再次续借")

@@ -15,6 +15,8 @@ def add_accident():
     borrow_id = data.get('borrow_id')
     handle_type = data.get('handle_type')
     amount = data.get('amount', 0.00)
+    operator_user_id = data.get('operator_user_id')
+    operator_role = data.get('operator_role')
     
     if not all([borrow_id, handle_type]):
         return error("借阅记录ID和处理类型不能为空")
@@ -30,6 +32,8 @@ def add_accident():
         borrow = cur.fetchone()
         if not borrow:
             return error("借阅记录不存在")
+        if operator_role != '管理员' and str(operator_user_id) != str(borrow['user_id']):
+            return error("读者只能处理自己的借阅记录", code=403)
         
         current_date = get_current_date()
         user_id = borrow['user_id']

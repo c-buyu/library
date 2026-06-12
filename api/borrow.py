@@ -84,6 +84,7 @@ def return_book():
     borrow_id = data.get('borrow_id')
     operator_user_id = data.get('operator_user_id')
     operator_role = data.get('operator_role')
+    remark = data.get('return_remark')
     
     if not borrow_id:
         return error("借阅记录ID不能为空")
@@ -114,9 +115,9 @@ def return_book():
         
         # 3. 插入还书记录
         cur.execute("""
-            INSERT INTO return_records(borrow_id, user_id, book_id, book_item_id, return_date, overdue_days, overdue_fee)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (borrow_id, borrow['user_id'], book_id, book_item_id, current_date, overdue_days, overdue_fee))
+            INSERT INTO return_records(borrow_id, user_id, book_id, book_item_id, return_date, overdue_days, overdue_fee, remark)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (borrow_id, borrow['user_id'], book_id, book_item_id, current_date, overdue_days, overdue_fee, remark))
         
         # 4. 更新状态和库存
         cur.execute("UPDATE borrows SET status='已还' WHERE borrow_id=%s", (borrow_id,))
@@ -163,10 +164,12 @@ def get_borrow_list():
         sql = """
             SELECT b.borrow_id, b.user_id, u.name as user_name, 
                    b.book_id, bo.book_name, b.book_item_id,
-                   b.borrow_date, b.return_deadline, b.renew_times, b.status, b.remark
+                   b.borrow_date, b.return_deadline, b.renew_times, b.status, b.remark, 
+                   rr.remark as return_remark
             FROM borrows b
             LEFT JOIN users u ON b.user_id = u.user_id
             LEFT JOIN books bo ON b.book_id = bo.book_id
+            LEFT JOIN return_records rr ON b.borrow_id = rr.borrow_id
             WHERE 1=1
         """
         params = []

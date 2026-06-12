@@ -288,6 +288,7 @@ function renderRecords() {
         <td>${item.renew_times}</td>
         <td><span class="status ${overdue ? "bad" : statusClass(item.status)}">${overdue ? "超期" : item.status}</span></td>
         <td>${item.remark || "-"}</td>
+        <td>${item.return_remark || "-"}</td>
         </tr>
     `;
   }).join("");
@@ -527,7 +528,11 @@ function initEvents() {
     handleAction(async () => {
       await apiRequest("/api/borrow/return", {
         method: "POST",
-        body: JSON.stringify(authBody({ borrow_id: Number($("#returnBorrow").value) }))
+        body: JSON.stringify(authBody({ 
+          borrow_id: Number($("#returnBorrow").value),
+          return_remark: $("#returnRemark").value.trim() 
+        })),
+        
       });
       event.target.reset();
       setDefaultDates();

@@ -111,9 +111,10 @@ async function loadAll() {
   state.systemDate = dateData.current_date;
   state.books = books || [];
   state.bookItems = items || [];
+  const normalizedReaders = (readers || []).map((reader) => ({ ...reader, role: "读者" }));
   state.users = [
     ...(state.currentUser ? [state.currentUser] : []),
-    ...(readers || []).filter((user) => Number(user.user_id) !== Number(state.currentUser?.user_id))
+    ...normalizedReaders.filter((user) => Number(user.user_id) !== Number(state.currentUser?.user_id))
   ];
   state.borrows = borrows || [];
   state.accidents = accidents || [];

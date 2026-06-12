@@ -18,7 +18,7 @@ def get_reader_list():
     try:
         cur = conn.cursor()
         cur.execute("""
-            SELECT user_id, username, name, gender, reader_type, 
+            SELECT user_id, username, role, name, gender, reader_type, 
                    max_borrow_num, borrow_days, black, create_time 
             FROM users WHERE role='读者'
         """)
@@ -145,7 +145,7 @@ def search_reader():
     conn = get_db_conn()
     try:
         cur = conn.cursor()
-        sql = "SELECT user_id, username, name, gender, reader_type, black FROM users WHERE role='读者'"
+        sql = "SELECT user_id, username, role, name, gender, reader_type, black FROM users WHERE role='读者'"
         params = []
         
         if name:

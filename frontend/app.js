@@ -126,7 +126,7 @@ async function loadAll() {
 }
 
 function applyRoleView() {
-  const adminViews = ["readers"];
+  const adminViews = ["readers", "borrow", "return"];
   adminViews.forEach((viewId) => {
     const item = document.querySelector(`[data-view="${viewId}"]`);
     if (item) item.classList.toggle("hidden", !isAdmin());
@@ -255,18 +255,33 @@ function renderBorrowItemSelect() {
   `).join("");
 }
 
-function renderSelects() {
+function renderBorrowUserSelect() {
+  const search = $("#borrowReaderSearch")?.value.trim().toLowerCase() || "";
   const readers = isAdmin() ? state.users.filter((user) => user.role === "读者") : [state.currentUser].filter(Boolean);
-  $("#borrowUser").innerHTML = readers.map((user) => `<option value="${user.user_id}">${user.name}（${user.username}）</option>`).join("");
-  
-  renderBorrowItemSelect();
+  const filtered = readers.filter((user) => {
+    const text = `${user.name} ${user.username}`.toLowerCase();
+    return !search || text.includes(search);
+  });
+  $("#borrowUser").innerHTML = filtered.map((user) => `<option value="${user.user_id}">${user.name}（${user.username}）</option>`).join("");
+}
 
-  $("#itemBook").innerHTML = state.books.map((book) => `<option value="${book.book_id}">${book.book_name}</option>`).join("");
-
+function renderReturnBorrowSelect() {
+  const search = $("#returnReaderSearch")?.value.trim().toLowerCase() || "";
   const unreturned = state.borrows.filter((item) => item.status === "未还");
-  const options = unreturned.map((item) => `<option value="${item.borrow_id}">${item.user_name || userName(item.user_id)} - ${item.book_name || bookNameByItem(item.book_item_id)} - 应还 ${toDateText(item.return_deadline)}</option>`).join("");
+  const filtered = unreturned.filter((item) => {
+    const readerName = item.user_name || userName(item.user_id) || "";
+    return !search || readerName.toLowerCase().includes(search);
+  });
+  const options = filtered.map((item) => `<option value="${item.borrow_id}">${item.user_name || userName(item.user_id)} - ${item.book_name || bookNameByItem(item.book_item_id)} - 应还 ${toDateText(item.return_deadline)}</option>`).join("");
   $("#returnBorrow").innerHTML = options || `<option value="">暂无未还记录</option>`;
-  $("#accidentBorrow").innerHTML = options || `<option value="">暂无未还记录</option>`;
+  $("#accidentBorrow").innerHTML = unreturned.map((item) => `<option value="${item.borrow_id}">${item.user_name || userName(item.user_id)} - ${item.book_name || bookNameByItem(item.book_item_id)} - 应还 ${toDateText(item.return_deadline)}</option>`).join("") || `<option value="">暂无未还记录</option>`;
+}
+
+function renderSelects() {
+  renderBorrowUserSelect();
+  renderBorrowItemSelect();
+  $("#itemBook").innerHTML = state.books.map((book) => `<option value="${book.book_id}">${book.book_name}</option>`).join("");
+  renderReturnBorrowSelect();
 }
 
 function renderRecords() {
@@ -430,6 +445,10 @@ function initEvents() {
 
     $("#borrowItemSearch").addEventListener("input", renderBorrowItemSelect);
   $("#borrowItemSearch").addEventListener("change", renderBorrowItemSelect);
+  $("#borrowReaderSearch").addEventListener("input", renderBorrowUserSelect);
+  $("#borrowReaderSearch").addEventListener("change", renderBorrowUserSelect);
+  $("#returnReaderSearch").addEventListener("input", renderReturnBorrowSelect);
+  $("#returnReaderSearch").addEventListener("change", renderReturnBorrowSelect);
 
   $$(".nav-item").forEach((item) => item.addEventListener("click", () => switchView(item.dataset.view)));
   $$("[data-open-modal]").forEach((item) => item.addEventListener("click", () => openModal(item.dataset.openModal)));

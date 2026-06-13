@@ -50,12 +50,12 @@ def add_accident():
         # 如果是丢失赔偿，更新单本图书状态为丢失
         if handle_type == '丢失赔偿':
             cur.execute("UPDATE book_items SET status='丢失' WHERE book_item_id=%s", (book_item_id,))
-            cur.execute("UPDATE borrows SET status='已还' WHERE borrow_id=%s", (borrow_id,))
+            cur.execute("UPDATE borrows SET status='丢失' WHERE borrow_id=%s", (borrow_id,))
         
         # 如果是损坏赔偿，更新单本图书状态为损坏
         if handle_type == '损坏赔偿':
             cur.execute("UPDATE book_items SET status='损坏' WHERE book_item_id=%s", (book_item_id,))
-            cur.execute("UPDATE borrows SET status='已还' WHERE borrow_id=%s", (borrow_id,))
+            cur.execute("UPDATE borrows SET status='损坏' WHERE borrow_id=%s", (borrow_id,))
         
         conn.commit()
         return success(msg="处理记录添加成功")

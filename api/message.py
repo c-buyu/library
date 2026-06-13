@@ -112,16 +112,12 @@ def mark_message_read():
         conn.close()
 
 
-@message_bp.route('/generate_due', methods=['POST'])
-def generate_due_messages():
-    data = request.json or {}
-    current_date = _parse_date(data.get('current_date'))
+def run_due_reminder_check(current_date=None):
+    """扫描未还借阅，自动生成到期/超期消息（供路由和日期变更时共用）"""
     if current_date is None:
-        return error("日期格式错误，请使用YYYY-MM-DD格式")
-
+        current_date = get_current_date()
     remind_days = BUSINESS_CONFIG['REMIND_DAYS_BEFORE_DUE']
     generated_count = 0
-
     conn = get_db_conn()
     try:
         cur = conn.cursor()
@@ -135,7 +131,6 @@ def generate_due_messages():
             """
         )
         rows = cur.fetchall()
-
         for row in rows:
             left_days = (row['return_deadline'] - current_date).days
             if left_days < 0:
@@ -152,12 +147,24 @@ def generate_due_messages():
                 )
                 if _insert_message(cur, row['user_id'], '到期', '图书即将到期', content):
                     generated_count += 1
-
         conn.commit()
-        return success({"generated_count": generated_count}, "到期提醒生成完成")
-    except Exception as e:
+        return generated_count
+    except Exception:
         conn.rollback()
-        return error(f"生成提醒失败：{str(e)}")
+        raise
     finally:
         cur.close()
         conn.close()
+
+
+@message_bp.route('/generate_due', methods=['POST'])
+def generate_due_messages():
+    data = request.json or {}
+    current_date = _parse_date(data.get('current_date'))
+    if current_date is None:
+        return error("日期格式错误，请使用YYYY-MM-DD格式")
+    try:
+        generated_count = run_due_reminder_check(current_date)
+        return success({"generated_count": generated_count}, "到期提醒生成完成")
+    except Exception as e:
+        return error(f"生成提醒失败：{str(e)}")

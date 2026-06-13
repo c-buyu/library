@@ -3,6 +3,7 @@ from flask import Blueprint, request
 from utils.response import success, error
 from config import SYSTEM_CONFIG
 from datetime import datetime
+from api.message import run_due_reminder_check
 
 system_bp = Blueprint('system', __name__)
 
@@ -19,9 +20,9 @@ def set_system_date():
         return error("日期不能为空")
     
     try:
-        # 验证日期格式
         datetime.strptime(date_str, '%Y-%m-%d')
         SYSTEM_CONFIG['MANUAL_DATE'] = date_str
+        run_due_reminder_check()
         return success(msg=f"系统日期已设置为：{date_str}")
     except ValueError:
         return error("日期格式错误，请使用YYYY-MM-DD格式")
@@ -30,6 +31,7 @@ def set_system_date():
 @system_bp.route('/reset_date', methods=['POST'])
 def reset_system_date():
     SYSTEM_CONFIG['MANUAL_DATE'] = None
+    run_due_reminder_check()
     return success(msg="系统日期已重置为真实日期")
 
 # 获取当前系统日期

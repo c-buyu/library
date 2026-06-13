@@ -431,14 +431,6 @@ function initEvents() {
     $("#borrowItemSearch").addEventListener("input", renderBorrowItemSelect);
   $("#borrowItemSearch").addEventListener("change", renderBorrowItemSelect);
 
-  $("#generateMessagesBtn").addEventListener("click", () => handleAction(async () => {
-    const result = await apiRequest("/api/message/generate_due", {
-      method: "POST",
-      body: JSON.stringify({ current_date: today() })
-    });
-    showToast(`已生成 ${result.generated_count} 条提醒`);
-  }));
-
   $$(".nav-item").forEach((item) => item.addEventListener("click", () => switchView(item.dataset.view)));
   $$("[data-open-modal]").forEach((item) => item.addEventListener("click", () => openModal(item.dataset.openModal)));
   $$("[data-close-modal]").forEach((item) => item.addEventListener("click", closeModals));

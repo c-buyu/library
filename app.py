@@ -68,5 +68,11 @@ def global_exception_handler(e):
 
 # 启动应用
 if __name__ == "__main__":
-    # 启动服务，监听所有网卡，端口5000
+    # 启动时执行一次到期提醒检查（覆盖自然日期推进的场景）
+    from api.message import run_due_reminder_check
+    try:
+        run_due_reminder_check()
+        app.logger.info("启动时到期提醒检查完成")
+    except Exception:
+        app.logger.exception("启动时到期提醒检查失败")
     app.run(host="0.0.0.0", port=5000, debug=FLASK_CONFIG["DEBUG"])

@@ -55,7 +55,8 @@ function showToast(message) {
 }
 
 function userName(userId) {
-  return state.users.find((user) => Number(user.user_id) === Number(userId))?.name || "-";
+  const user = state.users.find((u) => Number(u.user_id) === Number(userId));
+  return user ? `${user.name}（${user.username}）` : "-";
 }
 
 function bookById(bookId) {
@@ -162,12 +163,11 @@ function renderDashboard() {
   $("#statOverdue").textContent = overdue.length;
   $("#recentBorrowRows").innerHTML = state.borrows.slice(0, 6).map((item) => `
     <tr>
-      <td>${item.user_name || userName(item.user_id)}</td>
+      <td>${userName(item.user_id)}</td>
       <td>${item.book_name || bookNameByItem(item.book_item_id)}</td>
       <td>${toDateText(item.borrow_date)}</td>
       <td>${toDateText(item.return_deadline)}</td>
       <td><span class="status ${statusClass(item.status)}">${item.status}</span></td>
-      <td>${item.remark || "-"}
     </tr>
   `).join("");
 }
@@ -269,12 +269,12 @@ function renderReturnBorrowSelect() {
   const search = $("#returnReaderSearch")?.value.trim().toLowerCase() || "";
   const unreturned = state.borrows.filter((item) => item.status === "未还");
   const filtered = unreturned.filter((item) => {
-    const readerName = item.user_name || userName(item.user_id) || "";
+    const readerName = userName(item.user_id) || "";
     return !search || readerName.toLowerCase().includes(search);
   });
-  const options = filtered.map((item) => `<option value="${item.borrow_id}">${item.user_name || userName(item.user_id)} - ${item.book_name || bookNameByItem(item.book_item_id)} - 应还 ${toDateText(item.return_deadline)}</option>`).join("");
+  const options = filtered.map((item) => `<option value="${item.borrow_id}">${userName(item.user_id)} - ${item.book_name || bookNameByItem(item.book_item_id)} - 应还 ${toDateText(item.return_deadline)}</option>`).join("");
   $("#returnBorrow").innerHTML = options || `<option value="">暂无未还记录</option>`;
-  $("#accidentBorrow").innerHTML = unreturned.map((item) => `<option value="${item.borrow_id}">${item.user_name || userName(item.user_id)} - ${item.book_name || bookNameByItem(item.book_item_id)} - 应还 ${toDateText(item.return_deadline)}</option>`).join("") || `<option value="">暂无未还记录</option>`;
+  $("#accidentBorrow").innerHTML = unreturned.map((item) => `<option value="${item.borrow_id}">${userName(item.user_id)} - ${item.book_name || bookNameByItem(item.book_item_id)} - 应还 ${toDateText(item.return_deadline)}</option>`).join("") || `<option value="">暂无未还记录</option>`;
 }
 
 function renderSelects() {
@@ -288,7 +288,7 @@ function renderRecords() {
   const search = $("#recordSearch").value.trim().toLowerCase();
   const status = $("#recordStatusFilter").value;
   const rows = state.borrows.filter((item) => {
-    const text = `${item.user_name || userName(item.user_id)} ${item.book_name || bookNameByItem(item.book_item_id)} ${item.book_item_id}`.toLowerCase();
+    const text = `${userName(item.user_id)} ${item.book_name || bookNameByItem(item.book_item_id)} ${item.book_item_id}`.toLowerCase();
     return (!search || text.includes(search)) && (!status || item.status === status);
   });
 
@@ -296,7 +296,7 @@ function renderRecords() {
     const overdue = item.status === "未还" && daysBetween(today(), item.return_deadline) < 0;
     return `
       <tr>
-        <td>${item.user_name || userName(item.user_id)}</td>
+        <td>${userName(item.user_id)}</td>
         <td>${item.book_name || bookNameByItem(item.book_item_id)}</td>
         <td>${toDateText(item.borrow_date)}</td>
         <td>${toDateText(item.return_deadline)}</td>
@@ -310,9 +310,14 @@ function renderRecords() {
 }
 
 function renderAccidents() {
-  $("#accidentRows").innerHTML = state.accidents.map((item) => `
+  const search = $("#accidentSearch")?.value.trim().toLowerCase() || "";
+  const rows = state.accidents.filter((item) => {
+    const readerName = userName(item.user_id) || "";
+    return !search || readerName.toLowerCase().includes(search);
+  });
+  $("#accidentRows").innerHTML = rows.map((item) => `
     <tr>
-      <td>${item.user_name || userName(item.user_id)}</td>
+      <td>${userName(item.user_id)}</td>
       <td>${item.book_name || bookNameByItem(item.book_item_id)}</td>
       <td>${item.handle_type}</td>
       <td>${Number(item.amount || 0).toFixed(2)}</td>
@@ -457,7 +462,7 @@ function initEvents() {
     if (event.target === modal) closeModals();
   }));
 
-  ["bookSearch", "bookCategoryFilter", "itemSearch", "itemStatusFilter", "readerSearch", "readerStatusFilter", "recordSearch", "recordStatusFilter"].forEach((id) => {
+  ["bookSearch", "bookCategoryFilter", "itemSearch", "itemStatusFilter", "readerSearch", "readerStatusFilter", "recordSearch", "recordStatusFilter", "accidentSearch"].forEach((id) => {
     $(`#${id}`).addEventListener("input", renderAll);
     $(`#${id}`).addEventListener("change", renderAll);
   });
